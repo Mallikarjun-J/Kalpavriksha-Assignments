@@ -1,2 +1,24 @@
+# Compiled Executables (Windows & Linux)
+*.exe
+*.out
+*.app
+
+# Object files and libraries
+*.o
+*.obj
+*.a
+*.so
+*.dll
+
+# Debug files (Visual Studio / MinGW)
+*.pdb
+*.ilk
+*.dSYM/
+
+# VS Code settings and cache
 .vscode/
-.gitigonre
+
+# OS-generated files
+Thumbs.db
+desktop.ini
+.DS_Store
