@@ -41,7 +41,7 @@ bool ceoExists(struct Employee employees[])
 }
 
 // Find first free slot and link employee with supervisor
-struct Employee *createEmployee(struct Employee employees[], int *employeeCount, int employeeId, char employeeName[], char designation[], struct Employee *supervisor)
+struct Employee *addEmployeeRecord(struct Employee employees[], int *employeeCount, int employeeId, char employeeName[], char designation[], struct Employee *supervisor)
 {
     // Step 1: Find the first available empty slot in the array
     int slotIndex;
@@ -100,11 +100,15 @@ void addEmployee(struct Employee employees[], int *employeeCount)
     do
     {
         printf("Enter Employee ID: ");
-        if (scanf("%d", &employeeId) != 1)
-        {
-            printf("Invalid input. Employee not added.\n");
-            return;
-        }
+    if (scanf("%d", &employeeId) != 1)
+    {
+        printf("Invalid input. Employee not added.\n");
+
+        int character;
+        while ((character = getchar()) != '\n' && character != EOF);
+
+        return;
+    }
 
         if (employeeId <= 0)
         {
@@ -137,13 +141,18 @@ void addEmployee(struct Employee employees[], int *employeeCount)
     designation[strcspn(designation, "\n")] = '\0';
 
     // Step 4: Validate supervisor (CEO has no supervisor; others must have one)
-    if (strcmp(designation, "CEO") == 0)
+    if (!ceoExists(employees))
     {
-        if (ceoExists(employees))
+        if (strcmp(designation, "CEO") != 0)
         {
-            printf("A CEO already exists.\n");
+            printf("The first employee must be the CEO.\n");
             return;
         }
+    }
+    else if (strcmp(designation, "CEO") == 0)
+    {
+        printf("A CEO already exists.\n");
+        return;
     }
     else
     {
@@ -153,6 +162,8 @@ void addEmployee(struct Employee employees[], int *employeeCount)
             if (scanf("%d", &supervisorId) != 1)
             {
                 printf("Invalid input. Employee not added.\n");
+                int character;
+                while ((character = getchar()) != '\n' && character != EOF);
                 return;
             }
             // Cannot report to self
@@ -172,8 +183,8 @@ void addEmployee(struct Employee employees[], int *employeeCount)
         } while (supervisor == NULL);
     }
 
-    // Step 5: Create employee in array and link hierarchy
-    if (createEmployee(employees, employeeCount, employeeId, employeeName, designation, supervisor) == NULL)
+    // Step 5: Add employee in array and link hierarchy
+    if (addEmployeeRecord(employees, employeeCount, employeeId, employeeName, designation, supervisor) == NULL)
     {
         printf("Employee could not be added.\n");
         return;
@@ -208,11 +219,11 @@ void removeFromSupervisorList(struct Employee *supervisor, struct Employee *empl
     }
 }
 
-// Pick sibling with the least reports under same supervisor
-struct Employee *findSiblingWithFewestReports(struct Employee *employee)
+// Pick Supervisor with the least reports under same supervisor
+struct Employee *findEligibleSupervisor(struct Employee *employee)
 {
     struct Employee *supervisor = employee->supervisor;
-    struct Employee *siblingWithFewestReports = NULL;
+    struct Employee *eligibleSupervisor = NULL;
 
     if (supervisor == NULL)
     {
@@ -228,12 +239,12 @@ struct Employee *findSiblingWithFewestReports(struct Employee *employee)
             continue;
         }
 
-        if (siblingWithFewestReports == NULL || sibling->reportCount < siblingWithFewestReports->reportCount)
+        if (eligibleSupervisor == NULL || sibling->reportCount < eligibleSupervisor->reportCount)
         {
-            siblingWithFewestReports = sibling;
+            eligibleSupervisor = sibling;
         }
     }
-    return siblingWithFewestReports;
+    return eligibleSupervisor;
 }
 
 void removeEmployee(struct Employee employees[], int *employeeCount)
@@ -267,7 +278,7 @@ void removeEmployee(struct Employee employees[], int *employeeCount)
     }
 
     // Step 3: Select new supervisor (sibling with least reports, or fallback to supervisor)
-    struct Employee *newSupervisor = findSiblingWithFewestReports(employeeToRemove);
+    struct Employee *newSupervisor = findEligibleSupervisor(employeeToRemove);
     if (newSupervisor == NULL)
     {
         newSupervisor = employeeToRemove->supervisor;
@@ -293,7 +304,7 @@ void removeEmployee(struct Employee employees[], int *employeeCount)
     printf("Employee removed successfully.\n");
 }
 
-// Count total subordinates recursively (sub-tree size)
+// Count total subordinates recursively
 int countSubordinates(struct Employee *employee)
 {
     int totalSubordinates = 0;
@@ -304,7 +315,7 @@ int countSubordinates(struct Employee *employee)
     return totalSubordinates;
 }
 
-// Print hierarchy tree with indentation (DFS traversal)
+// Print organization hierarchy tree with indentation
 void displayHierarchy(struct Employee *employee, int indentLevel)
 {
     // Step 1: Print spaces per indentation level
@@ -348,10 +359,10 @@ void displayEmployeeHierarchy(struct Employee employees[], int employeeCount)
 
     printf("\n===== EMPLOYEE HIERARCHY =====\n");
     displayHierarchy(selectedEmployee, 0);
-    printf("\nTotal Employees Under %d: %d\n", selectedEmployeeId, countSubordinates(selectedEmployee));
+    printf("\nTotal Subordinates Under %d: %d\n", selectedEmployeeId, countSubordinates(selectedEmployee));
 }
 
-// Print complete tree starting from all top-level roots
+// Print complete organization tree starting from all top-level roots
 void displayCompleteHierarchy(struct Employee employees[], int employeeCount)
 {
     printf("\n===== ORGANIZATION HIERARCHY =====\n");
@@ -371,42 +382,11 @@ void displayCompleteHierarchy(struct Employee employees[], int employeeCount)
     printf("\nTotal Employees: %d\n", employeeCount);
 }
 
-// Load default sample data given in problem statement, testing purpose only
-bool initializeEmployees(struct Employee employees[], int *employeeCount)
-{
-    struct Employee *rahul = createEmployee(employees, employeeCount, 101, "Rahul", "CEO", NULL);
-    if (rahul == NULL)
-        return false;
-
-    struct Employee *amit = createEmployee(employees, employeeCount, 102, "Amit", "Engineering Manager", rahul);
-    if (amit == NULL)
-        return false;
-
-    struct Employee *priya = createEmployee(employees, employeeCount, 103, "Priya", "HR Manager", rahul);
-    if (priya == NULL)
-        return false;
-
-    if (createEmployee(employees, employeeCount, 104, "Neha", "Developer", amit) == NULL)
-        return false;
-    if (createEmployee(employees, employeeCount, 105, "Raj", "Developer", amit) == NULL)
-        return false;
-    if (createEmployee(employees, employeeCount, 106, "Karan", "HR Executive", priya) == NULL)
-        return false;
-
-    return true;
-}
-
 int main()
 {
     //Initialize storage and preload sample organization data
     struct Employee employees[MAX_EMPLOYEES] = {0};
     int employeeCount = 0;
-
-    if (!initializeEmployees(employees, &employeeCount))
-    {
-        printf("Could not initialize employees.\n");
-        return 1;
-    }
 
     int choice = 0;
     do
